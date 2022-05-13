@@ -17,6 +17,7 @@
  *
  */
 
+#define FPS 2
 
 typedef struct
 {
@@ -95,7 +96,9 @@ int main()
     handleInput(ch);
     clear();
     mvaddch(player->pos.y, player->pos.x, player->ch);
-    napms(100);
+
+    while(getch() != ERR) {}
+    napms(1000/FPS);
   }
 
   endwin();
