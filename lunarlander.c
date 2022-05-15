@@ -17,7 +17,7 @@
  *
  */
 
-#define FPS 2
+#define FPS 1
 
 typedef struct
 {
@@ -32,6 +32,10 @@ typedef struct
 } Entity;
 
 Entity* player;
+int fuel;
+int hvelocity;
+int vvelocity;
+
 
 Entity* createPlayer(Position start_pos)
 {
@@ -51,18 +55,28 @@ void handleInput(int input)
     //move up
     case KEY_UP:
       player->pos.y--;
+      // fuel decrease
+      // does not visually show ship going up unless vvelocity is negative
+      // delay reset
+      // upward velocity increase
       break;
     //move down
     case KEY_DOWN:
       player->pos.y++;
+      // fuel decrease
+      // downward velocity increase
       break;
     //move left
     case KEY_LEFT:
       player->pos.x--;
+      // fuel decrease
+      // negative velocity increase
       break;
     //move right
     case KEY_RIGHT:
       player->pos.x++;
+      // fuel decrease
+      // positive velocity increase
       break;
     default:
       break;
@@ -74,7 +88,8 @@ void handleInput(int input)
 int main()
 {	
   int ch;
-  Position start_pos = {10, 20};
+  int delay = 0;
+  Position start_pos = {10, 0};
 
   initscr();
   noecho();
@@ -91,7 +106,22 @@ int main()
       break;
     }
 
-    player->pos.y += 1;
+    //if (hvelocity > 0)
+    player->pos.x += 1;
+    
+    //if (hvelocity < 0)
+    // go left
+
+    delay++;
+    
+    //if (vvelocity > 0)
+    if (delay == 2) {
+      player->pos.y += 1;
+      delay = 0;
+    }
+
+    //if (vvelocity < 0)
+    //
 
     handleInput(ch);
     clear();
