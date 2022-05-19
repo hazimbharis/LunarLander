@@ -31,12 +31,24 @@ typedef struct
   char ch;
 } Entity;
 
-Entity* player;
-int fuel;
-int hvelocity;
-int vvelocity;
+/**
+ * typedef struct
+ * {
+ *   Position pos;
+ *   char tile;
+ * } MountainTile;
+ * 
+ * lol its just another entity struct - should just reuse
+ */
 
 
+
+Entity* player; // change this somehow
+int fuel;      // move to player struct?
+int hvelocity; // move to player struct?
+int vvelocity; // move to player struct?
+
+// change this player initialization bit too, hmm
 Entity* createPlayer(Position start_pos)
 {
   Entity* newPlayer = calloc(1, sizeof(Entity));
@@ -55,6 +67,7 @@ void handleInput(int input)
     //move up
     case KEY_UP:
       player->pos.y--;
+      // mvaddch " " over current spot
       // fuel decrease
       // does not visually show ship going up unless vvelocity is negative
       // delay reset
@@ -63,18 +76,21 @@ void handleInput(int input)
     //move down
     case KEY_DOWN:
       player->pos.y++;
+      // mvaddch " " over current spot
       // fuel decrease
       // downward velocity increase
       break;
     //move left
     case KEY_LEFT:
       player->pos.x--;
+      // mvaddch " " over current spot
       // fuel decrease
       // negative velocity increase
       break;
     //move right
     case KEY_RIGHT:
       player->pos.x++;
+      // mvaddch " " over current spot
       // fuel decrease
       // positive velocity increase
       break;
@@ -85,11 +101,25 @@ void handleInput(int input)
 
 }
 
+void generateTerrain() {
+  // draws terrain per space
+  // store y,x values of terrain draw into a matrix
+  // the y,x values will be checked each movement tick to see if 
+  // player y,x pos is overlapping
+  ;
+}
+
+void overlayCanvas() {
+  // prints score?, time, fuel, hvelocity, vvelocity and altitude at the top of the screen
+
+}
+
 int main()
 {	
   int ch;
   int delay = 0;
   Position start_pos = {10, 0};
+  // add starting hvelocity, vvelocity, and altitude - maybe put in player struct
 
   initscr();
   noecho();
@@ -102,7 +132,7 @@ int main()
 
   while(ch = getch())
   {
-    if (ch == 'q') {
+    if (ch == 'q') { // to quit game
       break;
     }
 
@@ -124,10 +154,10 @@ int main()
     //
 
     handleInput(ch);
-    clear();
+    clear(); // need to change to either refresh() or smtg else because it will delete terrain
     mvaddch(player->pos.y, player->pos.x, player->ch);
 
-    while(getch() != ERR) {}
+    while(getch() != ERR) {} // emptys getch buffer so no input lag
     napms(1000/FPS);
   }
 
