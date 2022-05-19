@@ -17,7 +17,7 @@
  *
  */
 
-#define FPS 1
+#define FPS 2
 
 typedef struct
 {
