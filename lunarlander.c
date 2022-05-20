@@ -1,5 +1,7 @@
 #include <ncurses.h>
 #include <stdlib.h>
+#include <time.h>
+
 /**
  * The main loop of your lander is roughly:
 
@@ -18,6 +20,8 @@
  */
 
 #define FPS 1
+// maybe change FPS if hvelocity or vvelocity is high to give illusion of speed
+
 
 typedef struct
 {
@@ -45,8 +49,8 @@ typedef struct
 
 Entity* player; // change this somehow
 int fuel;      // move to player struct?
-int hvelocity = 10; // move to player struct?
-int vvelocity; // move to player struct?
+int hvelocity = 2; // move to player struct?
+int vvelocity = 2; // move to player struct?
 int score;
 int counter;
 
@@ -106,29 +110,59 @@ void handleInput(int input)
 
 }
 
-void generateTerrain() {
+void generateTerrain(int height, int width) {
+  int i=0;
+  int j=0;
+  int x;
+  int r;
+
+  for (x=0;x<width;x++) 
+  {
+    mvaddch(height-i,x,'/');
+    // store position in array
+    i++;
+    r = rand() % 3;
+    if ( i == height/2 || r == 1) {
+      for (x=x+1;x<width;x++) {
+        i--;
+        mvaddch(height-i,x,'\\');
+        // store position in array
+        r = rand() % 4;
+        if (i < 0 || r == 1) {
+          break;
+        }
+      }
+    }
+  }
+  
   // draws terrain per space
   // store y,x values of terrain draw into a matrix
   // the y,x values will be checked each movement tick to see if 
   // player y,x pos is overlapping
-  ;
+  
 }
 
 void overlayCanvas(int height, int width) {
   // prints score?, time, fuel, hvelocity, vvelocity and altitude at the top of the screen
-  mvprintw(0,0,"SCORE %d", score);
-  mvprintw(2,0,"COUNTER %d", counter);
-  mvprintw(4,0,"FUEL %d", fuel);
+  mvprintw(0,1,"SCORE %04d", score);
+  mvprintw(1,1,"TIME  %04d", counter);
+  mvprintw(2,1,"FUEL  %04d", fuel);
 
-  mvprintw(0,width-10,"ALTITUDE");
+  //mvprintw(0,width-14,"ALTITUDE  %04d", player->pos.y);
   //mvprintw(2,width-10,"X-VELOCITY %d", hvelocity);
-  mvprintw(4,width-10,"Y-VELOCITY");
+  mvprintw(2,width-15,"Y-VELOCITY %03d",vvelocity);
+
+  int i;
+  for (i=0;i<width;i++) {
+    mvaddch(3,i,'~');
+  }
 
 
 }
 
 int main()
 {	
+  srand(time(NULL));
   int ch;
   int delay = 0;
   int height,width;
@@ -137,13 +171,21 @@ int main()
 
   initscr();
   noecho();
+  //init_pair(1, COLOR_CYAN, COLOR_BLACK);
   curs_set(0);
   keypad(stdscr, TRUE);
   nodelay(stdscr, TRUE);
+  start_color();
+  attron(COLOR_PAIR(1));
+  //overlayCanvas(height,width);
+  refresh();
+  attroff(COLOR_PAIR(1));
 
   getmaxyx(stdscr,height,width);
-  overlayCanvas(height,width);
   player = createPlayer(start_pos);
+  overlayCanvas(height,width);
+  generateTerrain(height, width);
+  
   mvaddch(player->pos.y, player->pos.x, player->ch);
 
   while(ch = getch())
@@ -181,7 +223,8 @@ int main()
     handleInput(ch);
     //clear(); // need to change to either refresh() or smtg else because it will delete terrain and canvas
     mvaddch(player->pos.y, player->pos.x, player->ch);
-    mvprintw(2,width-16,"X-VELOCITY %d", hvelocity);
+    mvprintw(0,width-15,"ALTITUDE  %04d", height - player->pos.y);
+    mvprintw(1,width-15,"X-VELOCITY %03d", hvelocity);
 
     while(getch() != ERR) {} // emptys getch buffer so no input lag
     napms(1000/FPS);
