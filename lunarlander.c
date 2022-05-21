@@ -19,7 +19,7 @@
  *
  */
 
-#define FPS 1
+#define FPS 2
 // maybe change FPS if hvelocity or vvelocity is high to give illusion of speed
 
 
@@ -34,6 +34,15 @@ typedef struct
   Position pos;
   char ch;
 } Entity;
+
+typedef struct
+{
+  Position pos;
+  bool landable;
+  int score_mult;
+} Tile;
+
+//const Tile default = {.landable = FALSE;}
 
 /**
  * typedef struct
@@ -78,6 +87,7 @@ void handleInput(int input)
       // does not visually show ship going up unless vvelocity is negative
       // delay reset
       // upward velocity increase
+      // if (tiles[player->pos.y][player->pos.x].landable == FALSE)
       break;
     //move down
     case KEY_DOWN:
@@ -111,24 +121,143 @@ void handleInput(int input)
 }
 
 void generateTerrain(int height, int width) {
-  int i=0;
+  int i=2;
   int j=0;
   int x;
   int r;
+  int d; // 0 if previous tile was up, 1 if down and 2 if pad.
+
+  Tile tiles[height][width];
 
   for (x=0;x<width;x++) 
-  {
+  { 
+    r = rand() % 3;
+
+    // new gen func with landing
+    /*
+    r = (rand() % 3) + 1;
+
+    if (r == 1) {
+      //go up
+      for (x=x;x<width;x++) {
+        mvaddch(height-i,x,'/');
+        // store position in array
+        i++;
+        r = rand() % 3;
+        if (i == height/2 || r == 1) {
+          break;
+        }
+      }
+    }
+    if (i == height/2 || r == 2 && i != 0) {
+      //go down
+      for (x=x;x<width;x++) {
+        i--;
+        mvaddch(height-i,x,'\\');
+        // store position in array
+        r = rand() % 3;
+        if (i == 0 || r == 1) {
+          break;
+        }
+      }
+    }
+    if (i == 1 || r == 3) {
+      //create landing pad
+      for (x=x;x<width;x++) {
+        mvaddch(height-i,x,'_');
+        // store position in array
+        r = rand() % 2;
+        if (r == 1) {
+          break;
+        }
+      }
+    }
+    */
+
+    // old gen func without landing
+    //r = (rand() % 3) + 1;
+    /*
+      if (r == 2 && d != 2) {
+        if (d == 0) {
+          i++;
+        }
+        for (x=x;x<width;x++) {
+          mvaddch(height-i,x,'_');
+          // store position in array
+          r = rand() % 3;
+          if (r == 1) {
+            r = rand() % 4;
+            d = 2;
+            break;
+          }
+        }
+      }
+    */
+
+    /*
+    mvaddch(height-i,x,'/');
+    // store position in array
+    i++;
+    d=0;
+    */
+    
+    /*
+    if (r == 2) {
+      for (x=x;x<width;x++) {
+        mvaddch(height-i,x,'_');
+        // store position in array
+        r = rand() % 2;
+        if (r == 1) {
+          break;
+        }
+    }
+    */
+
+    /*
+    if ( i == height/2 || r == 1) {
+      //if (i < height/4) continue; // makes mountains more uniform but less diverse and interesting patterns appears
+      for (x=x+1;x<width;x++) {  
+        i--;
+        mvaddch(height-i,x,'\\');
+        // store position in array
+        r = rand() % 3;
+
+        if (i == 0 || r == 1) {
+          d=1;
+          break;
+        }
+      }
+    }
+    */
+
+    // if mountain height at ground level, add flat land
+    if ( r == 2 ) {
+      for (x=x;x<width;x++) {
+        mvaddch(height-i,x,'_');
+        tiles[height-i][x].landable = TRUE;
+        // store position in array
+
+        r = rand() % 3;
+        if (r != 0) {
+          break;
+        }
+      }
+    }
+
     mvaddch(height-i,x,'/');
     // store position in array
     i++;
     r = rand() % 3;
-    if ( i == height/2 || r == 1) {
+    if ( i >= height/2 || r == 1) {
       for (x=x+1;x<width;x++) {
         i--;
         mvaddch(height-i,x,'\\');
         // store position in array
         r = rand() % 4;
-        if (i < 0 || r == 1) {
+        if (i == 2 || r == 1) {
+          i++;
+          mvaddch(height-i,x,'_');
+          mvaddch(height-(i-1),x,' ');
           break;
         }
       }
@@ -223,7 +352,7 @@ int main()
     handleInput(ch);
     //clear(); // need to change to either refresh() or smtg else because it will delete terrain and canvas
     mvaddch(player->pos.y, player->pos.x, player->ch);
-    mvprintw(0,width-15,"ALTITUDE  %04d", height - player->pos.y);
+    mvprintw(0,width-15,"ALTITUDE   %03d", height - player->pos.y);
     mvprintw(1,width-15,"X-VELOCITY %03d", hvelocity);
 
     while(getch() != ERR) {} // emptys getch buffer so no input lag
