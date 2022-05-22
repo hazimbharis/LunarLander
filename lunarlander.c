@@ -1,6 +1,4 @@
-#include <ncurses.h>
-#include <stdlib.h>
-#include <time.h>
+#include "lunarlander.h"
 
 /**
  * The main loop of your lander is roughly:
@@ -21,41 +19,6 @@
 
 //#define FPS 2
 // maybe change FPS if hvelocity or vvelocity is high to give illusion of speed
-
-
-typedef struct
-{
-  int y;
-  int x;
-} Position;
-
-typedef struct
-{
-  Position pos;
-  char ch;
-} Entity;
-
-typedef struct
-{
-  Position pos;
-  bool landable;
-  int tile_id; // 0 is air, 1 is mountain, 2 is pad
-  int score_mult;
-} Tile;
-
-//const Tile default = {.landable = FALSE;}
-
-/**
- * typedef struct
- * {
- *   Position pos;
- *   char tile;
- * } MountainTile;
- * 
- * lol its just another entity struct - should just reuse
- */
-
-
 
 Entity* player; // change this somehow
 int fuel;      // move to player struct?
@@ -118,13 +81,14 @@ void handleInput(int input)
     mvaddch(player->pos.y, player->pos.x, ' ');
       break;
   }
-
-
 }
 
+
+
 void generateTerrain(int height, int width) {
-  int i=2;
+  int i=0;
   int j=0;
+  int h=3;
   int x;
   int r;
   int d; // 0 if previous tile was up, 1 if down and 2 if pad.
@@ -136,201 +100,116 @@ void generateTerrain(int height, int width) {
   { 
     r = rand() % 5;
 
-    // new gen func with landing
-    /*
-    r = (rand() % 3) + 1;
-
-    if (r == 1) {
-      //go up
-      for (x=x;x<width;x++) {
-        mvaddch(height-i,x,'/');
-        // store position in array
-        i++;
-        r = rand() % 3;
-        if (i == height/2 || r == 1) {
-          break;
-        }
-      }
-    }
-    if (i == height/2 || r == 2 && i != 0) {
-      //go down
-      for (x=x;x<width;x++) {
-        i--;
-        mvaddch(height-i,x,'\\');
-        // store position in array
-        r = rand() % 3;
-        if (i == 0 || r == 1) {
-          break;
-        }
-      }
-    }
-    if (i == 1 || r == 3) {
-      //create landing pad
-      for (x=x;x<width;x++) {
-        mvaddch(height-i,x,'_');
-        // store position in array
-        r = rand() % 2;
-        if (r == 1) {
-          break;
-        }
-      }
-    }
-    */
-
-    // old gen func without landing
-    //r = (rand() % 3) + 1;
-    /*
-      if (r == 2 && d != 2) {
-        if (d == 0) {
-          i++;
-        }
-        for (x=x;x<width;x++) {
-          mvaddch(height-i,x,'_');
-          // store position in array
-          r = rand() % 3;
-          if (r == 1) {
-            r = rand() % 4;
-            d = 2;
-            break;
-          }
-        }
-      }
-    */
-
-    /*
-    mvaddch(height-i,x,'/');
-    // store position in array
-    i++;
-    d=0;
-    */
-    
-    /*
-    if (r == 2) {
-      for (x=x;x<width;x++) {
-        mvaddch(height-i,x,'_');
-        // store position in array
-        r = rand() % 2;
-        if (r == 1) {
-          break;
-        }
-    }
-    */
-
-    /*
-    if ( i == height/2 || r == 1) {
-      //if (i < height/4) continue; // makes mountains more uniform but less diverse and interesting patterns appears
-      for (x=x+1;x<width;x++) {  
-        i--;
-        mvaddch(height-i,x,'\\');
-        // store position in array
-        r = rand() % 3;
-
-        if (i == 0 || r == 1) {
-          d=1;
-          break;
-        }
-      }
-    }
-    */
-
     // if mountain height at ground level, add flat land
     if ( r == 2 && d != 2) {
       // make landing pads - min length 2 - also multiplier based on depth value/i
-      mvaddch(height-i,x,'_');
-      mvaddch(height-i,x+1,'_');
-      tiles[height-i][x].tile_id = 2;
-      tiles[height-i][x+1].tile_id = 2;
       if (x != width - 1) {
 
-        if (i > height/4) {
+        if (h > height/6) {
           score_mult = 3;
         }
           
-        if (i > height/3) {
+        if (h > height/3) {
           score_mult = 4;
         }
           
-        if (i > height/2) {
+        if (h > height/2) {
           score_mult = 5;
         }
         
-        mvprintw(height-i+1,x,"x%d",score_mult);
-        score_mult = 2;
+        mvprintw(height-h+1,x,"x%d",score_mult);
       }
+
+      mvaddch(height-h,x,'_');
+      mvaddch(height-h,x+1,'_');
+      tiles[height-h][x].tile_id = 2;
+      tiles[height-h][x].score_mult = score_mult;
+      tiles[height-h][x+1].tile_id = 2;
+      tiles[height-h][x+1].score_mult = score_mult;
+
       x+=2;
       for (x=x;x<width;x++) {
-        mvaddch(height-i,x,'_');
-        tiles[height-i][x].tile_id = 2;
+        mvaddch(height-h,x,'_');
+        tiles[height-h][x].tile_id = 2;
+        tiles[height-h][x].score_mult = score_mult;
         // store position in array
 
         r = rand() % 3;
         if (r != 0) {
           d=2;
+          score_mult = 2;
           break;
         }
       }
     }
 
     //if (r == 1) {
-      mvaddch(height-i,x,'/');
+      mvaddch(height-h,x,'/');
       // store position in array
-      i++;
+      h++;
       d=1;
       //x++;
     //}
     
     
     r = rand() % 3;
-    if ( i >= height/1.5 || r == 1) {
+    if ( h >= height/1.5 || r == 1) {
       for (x=x+1;x<width;x++) {
-        i--;
-        mvaddch(height-i,x,'\\');
+        h--;
+        mvaddch(height-h,x,'\\');
+        tiles[height-h][x].score_mult = score_mult;
         // store position in array
         r = rand() % 8;
-        if (i == 2 || r == 2) {
-          // make landing pads - min length 2 - also multiplier based on depth value/i
+        if (h == 2 || r == 2) {
+          // make landing pads - min length 2 - also multiplier based on depth value/h
           
-          i++;
-          mvaddch(height-i,x,'_');
-          tiles[height-i][x].tile_id = 2;
-          mvaddch(height-(i-1),x,' ');
-          mvaddch(height-i,x+1,'_');
-          tiles[height-i][x+1].tile_id = 2;
+          h++;
+          mvaddch(height-h,x,'_');
+          mvaddch(height-(h-1),x,' ');
+          mvaddch(height-h,x+1,'_');
+
           if (x != width - 1) {
 
-            if (i > height/4) {
+            if (h > height/6) {
               score_mult = 3;
             }
               
-            if (i > height/3) {
+            if (h > height/3) {
               score_mult = 4;
             }
               
-            if (i > height/2) {
+            if (h > height/2) {
               score_mult = 5;
             }
-            
-            mvprintw(height-i+1,x,"x%d",score_mult);
-            score_mult = 2;
+
+            tiles[height-h][x].tile_id = 2;
+            tiles[height-h][x].score_mult = score_mult;
+            tiles[height-h-1][x].tile_id = 0;
+            tiles[height-h][x+1].tile_id = 2;
+            tiles[height-h][x+1].score_mult = score_mult;
+            mvprintw(height-h+1,x,"x%d",score_mult);
           } 
-          //mvprintw score number multiplier underneath
+
+          //if (x == width - 1) set current tile unlandable
+          
           x++;
           for (x=x;x<width;x++) {
-            mvaddch(height-i,x,'_');
-            tiles[height-i][x].tile_id = 2;
-            tiles[height-i][x].score_mult = score_mult;
+            mvaddch(height-h,x,'_');
+            tiles[height-h][x].tile_id = 2;
+            tiles[height-h][x].score_mult = score_mult;
             // store position in array
 
             r = rand() % 3;
             if (r != 0) {
               d=2;
+              score_mult = 2;
               break;
             }
           }
           
-          //i++;
-          //mvaddch(height-i,x,'_');
-          //mvaddch(height-(i-1),x,' ');
+          //h++;
+          //mvaddch(height-h,x,'_');
+          //mvaddch(height-(h-1),x,' ');
           break;
         }
         if (r == 3) {
@@ -347,7 +226,7 @@ void generateTerrain(int height, int width) {
   // store y,x values of terrain draw into a matrix
   // the y,x values will be checked each movement tick to see if 
   // player y,x pos is overlapping
-  
+  //return tiles[][];
 }
 
 void overlayCanvas(int height, int width) {
@@ -373,7 +252,7 @@ int main()
   int ch;
   int delay = 0;
   int height,width;
-  Position start_pos = {10, 0};
+  Position start_pos = {6, 0};
   // add starting hvelocity, vvelocity, and altitude - maybe put in player struct
 
   initscr();
@@ -390,7 +269,9 @@ int main()
 
   getmaxyx(stdscr,height,width);
   player = createPlayer(start_pos);
+  //tiles[height][width];
   overlayCanvas(height,width);
+  //tiles = generateTerrain(height, width);
   generateTerrain(height, width);
   
   mvaddch(player->pos.y, player->pos.x, player->ch);
@@ -450,13 +331,10 @@ int main()
       }
     }
 
-
-    //if (vvelocity < 0)
-    //
-
     if (hvelocity > 5 || hvelocity < -5) {
       FPS = 3;
     }
+
     handleInput(ch);
     //clear(); // need to change to either refresh() or smtg else because it will delete terrain and canvas
     mvaddch(player->pos.y, player->pos.x, player->ch);
@@ -466,6 +344,9 @@ int main()
 
     while(getch() != ERR) {} // emptys getch buffer so no input lag
     napms(1000/FPS);
+    //check win or lose
+
+    //if (tiles)
   }
 
   endwin();
