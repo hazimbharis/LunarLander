@@ -39,6 +39,7 @@ typedef struct
 {
   Position pos;
   bool landable;
+  int tile_id; // 0 is air, 1 is mountain, 2 is pad
   int score_mult;
 } Tile;
 
@@ -83,7 +84,7 @@ void handleInput(int input)
     case KEY_UP:
     mvaddch(player->pos.y, player->pos.x, ' ');
       //player->pos.y--;
-      vvelocity--;
+      vvelocity-=2;
       // fuel decrease
       // does not visually show ship going up unless vvelocity is negative
       // delay reset
@@ -92,8 +93,8 @@ void handleInput(int input)
       break;
     //move down - also this should be removed
     case KEY_DOWN:
-    mvaddch(player->pos.y, player->pos.x, ' ');
-      player->pos.y++;
+      //mvaddch(player->pos.y, player->pos.x, ' ');
+      //player->pos.y++;
       // fuel decrease
       // downward velocity increase
       break;
@@ -127,12 +128,13 @@ void generateTerrain(int height, int width) {
   int x;
   int r;
   int d; // 0 if previous tile was up, 1 if down and 2 if pad.
+  int score_mult = 2;
 
   Tile tiles[height][width];
 
   for (x=0;x<width;x++) 
   { 
-    r = rand() % 3;
+    r = rand() % 5;
 
     // new gen func with landing
     /*
@@ -232,50 +234,96 @@ void generateTerrain(int height, int width) {
     */
 
     // if mountain height at ground level, add flat land
-    if ( r == 2 ) {
+    if ( r == 2 && d != 2) {
       // make landing pads - min length 2 - also multiplier based on depth value/i
       mvaddch(height-i,x,'_');
       mvaddch(height-i,x+1,'_');
+      tiles[height-i][x].tile_id = 2;
+      tiles[height-i][x+1].tile_id = 2;
+      if (x != width - 1) {
+
+        if (i > height/4) {
+          score_mult = 3;
+        }
+          
+        if (i > height/3) {
+          score_mult = 4;
+        }
+          
+        if (i > height/2) {
+          score_mult = 5;
+        }
+        
+        mvprintw(height-i+1,x,"x%d",score_mult);
+        score_mult = 2;
+      }
       x+=2;
       for (x=x;x<width;x++) {
         mvaddch(height-i,x,'_');
-        tiles[height-i][x].landable = TRUE;
+        tiles[height-i][x].tile_id = 2;
         // store position in array
 
-        r = rand() % 2;
+        r = rand() % 3;
         if (r != 0) {
+          d=2;
           break;
         }
       }
     }
 
-    mvaddch(height-i,x,'/');
-    // store position in array
-    i++;
+    //if (r == 1) {
+      mvaddch(height-i,x,'/');
+      // store position in array
+      i++;
+      d=1;
+      //x++;
+    //}
+    
     
     r = rand() % 3;
-    if ( i >= height/2 || r == 1) {
+    if ( i >= height/1.5 || r == 1) {
       for (x=x+1;x<width;x++) {
         i--;
         mvaddch(height-i,x,'\\');
         // store position in array
         r = rand() % 8;
-        if (i == 2 || r == 1) {
+        if (i == 2 || r == 2) {
           // make landing pads - min length 2 - also multiplier based on depth value/i
           
           i++;
           mvaddch(height-i,x,'_');
+          tiles[height-i][x].tile_id = 2;
           mvaddch(height-(i-1),x,' ');
           mvaddch(height-i,x+1,'_');
+          tiles[height-i][x+1].tile_id = 2;
+          if (x != width - 1) {
+
+            if (i > height/4) {
+              score_mult = 3;
+            }
+              
+            if (i > height/3) {
+              score_mult = 4;
+            }
+              
+            if (i > height/2) {
+              score_mult = 5;
+            }
+            
+            mvprintw(height-i+1,x,"x%d",score_mult);
+            score_mult = 2;
+          } 
           //mvprintw score number multiplier underneath
           x++;
           for (x=x;x<width;x++) {
             mvaddch(height-i,x,'_');
-            tiles[height-i][x].landable = TRUE;
+            tiles[height-i][x].tile_id = 2;
+            tiles[height-i][x].score_mult = score_mult;
             // store position in array
 
             r = rand() % 3;
             if (r != 0) {
+              d=2;
               break;
             }
           }
@@ -285,10 +333,16 @@ void generateTerrain(int height, int width) {
           //mvaddch(height-(i-1),x,' ');
           break;
         }
+        if (r == 3) {
+          break;
+        }
       }
+      //continue;
     }
   }
   
+  //x--;
+
   // draws terrain per space
   // store y,x values of terrain draw into a matrix
   // the y,x values will be checked each movement tick to see if 
@@ -360,8 +414,15 @@ int main()
     }
     
 
-    delay++;
+    //delay++;
 
+    if (vvelocity < 5 || vvelocity > -5) {
+      delay++;
+    }
+
+    if (vvelocity >= 5 || vvelocity <= -5) {
+      delay += 2;
+    }
 
     //if (delay == 1) {
       //vvelocity = vvelocity * 1.62;
@@ -369,8 +430,8 @@ int main()
     //}
     
     
-    if (vvelocity > 0) {
-      if (delay == 2) {
+    if (vvelocity >= 0) {
+      if (delay >= 2) {
         mvaddch(player->pos.y, player->pos.x, ' ');
         player->pos.y += 1;
         mvaddch(player->pos.y, player->pos.x, player->ch);
@@ -379,11 +440,12 @@ int main()
       }
     }
 
-    if (vvelocity < 0) {
-      if (delay == 2) {
+    if (vvelocity <= 0) {
+      if (delay >= 2) {
           mvaddch(player->pos.y, player->pos.x, ' ');
           player->pos.y -= 1;
           mvaddch(player->pos.y, player->pos.x, player->ch);
+          vvelocity = vvelocity + 1.5;
           delay = 0;
       }
     }
@@ -399,8 +461,8 @@ int main()
     //clear(); // need to change to either refresh() or smtg else because it will delete terrain and canvas
     mvaddch(player->pos.y, player->pos.x, player->ch);
     mvprintw(0,width-15,"ALTITUDE   %03d", height - player->pos.y);
-    mvprintw(1,width-15,"X-VELOCITY %03d", hvelocity);
-    mvprintw(2,width-15,"Y-VELOCITY %03d", vvelocity);
+    mvprintw(1,width-15,"X-VELOCITY %+03d", hvelocity);
+    mvprintw(2,width-15,"Y-VELOCITY %+03d", vvelocity);
 
     while(getch() != ERR) {} // emptys getch buffer so no input lag
     napms(1000/FPS);
