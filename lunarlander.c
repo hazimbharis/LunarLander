@@ -19,7 +19,7 @@
  *
  */
 
-#define FPS 2
+//#define FPS 2
 // maybe change FPS if hvelocity or vvelocity is high to give illusion of speed
 
 
@@ -82,14 +82,15 @@ void handleInput(int input)
     //move up
     case KEY_UP:
     mvaddch(player->pos.y, player->pos.x, ' ');
-      player->pos.y--;
+      //player->pos.y--;
+      vvelocity--;
       // fuel decrease
       // does not visually show ship going up unless vvelocity is negative
       // delay reset
       // upward velocity increase
       // if (tiles[player->pos.y][player->pos.x].landable == FALSE)
       break;
-    //move down
+    //move down - also this should be removed
     case KEY_DOWN:
     mvaddch(player->pos.y, player->pos.x, ' ');
       player->pos.y++;
@@ -232,12 +233,16 @@ void generateTerrain(int height, int width) {
 
     // if mountain height at ground level, add flat land
     if ( r == 2 ) {
+      // make landing pads - min length 2 - also multiplier based on depth value/i
+      mvaddch(height-i,x,'_');
+      mvaddch(height-i,x+1,'_');
+      x+=2;
       for (x=x;x<width;x++) {
         mvaddch(height-i,x,'_');
         tiles[height-i][x].landable = TRUE;
         // store position in array
 
-        r = rand() % 3;
+        r = rand() % 2;
         if (r != 0) {
           break;
         }
@@ -247,17 +252,37 @@ void generateTerrain(int height, int width) {
     mvaddch(height-i,x,'/');
     // store position in array
     i++;
+    
     r = rand() % 3;
     if ( i >= height/2 || r == 1) {
       for (x=x+1;x<width;x++) {
         i--;
         mvaddch(height-i,x,'\\');
         // store position in array
-        r = rand() % 4;
+        r = rand() % 8;
         if (i == 2 || r == 1) {
+          // make landing pads - min length 2 - also multiplier based on depth value/i
+          
           i++;
           mvaddch(height-i,x,'_');
           mvaddch(height-(i-1),x,' ');
+          mvaddch(height-i,x+1,'_');
+          //mvprintw score number multiplier underneath
+          x++;
+          for (x=x;x<width;x++) {
+            mvaddch(height-i,x,'_');
+            tiles[height-i][x].landable = TRUE;
+            // store position in array
+
+            r = rand() % 3;
+            if (r != 0) {
+              break;
+            }
+          }
+          
+          //i++;
+          //mvaddch(height-i,x,'_');
+          //mvaddch(height-(i-1),x,' ');
           break;
         }
       }
@@ -279,19 +304,18 @@ void overlayCanvas(int height, int width) {
 
   //mvprintw(0,width-14,"ALTITUDE  %04d", player->pos.y);
   //mvprintw(2,width-10,"X-VELOCITY %d", hvelocity);
-  mvprintw(2,width-15,"Y-VELOCITY %03d",vvelocity);
+  //mvprintw(2,width-15,"Y-VELOCITY %03d",vvelocity);
 
   int i;
   for (i=0;i<width;i++) {
     mvaddch(3,i,'~');
   }
-
-
 }
 
 int main()
 {	
   srand(time(NULL));
+  int FPS = 2;
   int ch;
   int delay = 0;
   int height,width;
@@ -337,23 +361,46 @@ int main()
     
 
     delay++;
+
+
+    //if (delay == 1) {
+      //vvelocity = vvelocity * 1.62;
+      //delay = 0;
+    //}
     
-    //if (vvelocity > 0)
-    if (delay == 2) {
-      mvaddch(player->pos.y, player->pos.x, ' ');
-      player->pos.y += 1;
-      mvaddch(player->pos.y, player->pos.x, player->ch);
-      delay = 0;
+    
+    if (vvelocity > 0) {
+      if (delay == 2) {
+        mvaddch(player->pos.y, player->pos.x, ' ');
+        player->pos.y += 1;
+        mvaddch(player->pos.y, player->pos.x, player->ch);
+        vvelocity = vvelocity + 1;
+        delay = 0;
+      }
     }
+
+    if (vvelocity < 0) {
+      if (delay == 2) {
+          mvaddch(player->pos.y, player->pos.x, ' ');
+          player->pos.y -= 1;
+          mvaddch(player->pos.y, player->pos.x, player->ch);
+          delay = 0;
+      }
+    }
+
 
     //if (vvelocity < 0)
     //
 
+    if (hvelocity > 5 || hvelocity < -5) {
+      FPS = 3;
+    }
     handleInput(ch);
     //clear(); // need to change to either refresh() or smtg else because it will delete terrain and canvas
     mvaddch(player->pos.y, player->pos.x, player->ch);
     mvprintw(0,width-15,"ALTITUDE   %03d", height - player->pos.y);
     mvprintw(1,width-15,"X-VELOCITY %03d", hvelocity);
+    mvprintw(2,width-15,"Y-VELOCITY %03d", vvelocity);
 
     while(getch() != ERR) {} // emptys getch buffer so no input lag
     napms(1000/FPS);
