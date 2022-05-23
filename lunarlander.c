@@ -20,48 +20,49 @@
 //#define FPS 2
 // maybe change FPS if hvelocity or vvelocity is high to give illusion of speed
 
-Entity* player; // change this somehow
-int fuel = 100;      // move to player struct?
-int hvelocity = 2; // move to player struct?
-int vvelocity = 2; // move to player struct?
-int score = 0;
-int counter = 0;
-
-// change this player initialization bit too, hmm
-Entity* createPlayer(Position start_pos)
+Entity* createPlayer(Position start_pos, int starting_fuel)
 {
   Entity* newPlayer = calloc(1, sizeof(Entity));
 
   newPlayer->pos.y = start_pos.y;
   newPlayer->pos.x = start_pos.x;
+  newPlayer->hvelocity = 2;
+  newPlayer->vvelocity = 2;
+  newPlayer->fuel = starting_fuel;
   newPlayer->ch = '&';
 
   return newPlayer;
 }
 
-void handleInput(int input)
+void handleInput(Entity* player, int input)
 {
   switch(input)
   {
     //move up
     case KEY_UP:
-    mvaddch(player->pos.y, player->pos.x, ' ');
-      vvelocity-=2;
-      fuel--;
+    if (player->fuel != 0) {
+      mvaddch(player->pos.y, player->pos.x, ' ');
+      player->vvelocity-=2;
+      player->fuel--;
       // delay reset
-      break;
+    }
+    break;
     //move left
     case KEY_LEFT:
-    mvaddch(player->pos.y, player->pos.x, ' ');
-      hvelocity--;
-      fuel--;
-      break;
+    if (player->fuel != 0) {
+      mvaddch(player->pos.y, player->pos.x, ' ');
+      player->hvelocity--;
+      player->fuel--;
+    }
+    break;
     //move right
     case KEY_RIGHT:
-    mvaddch(player->pos.y, player->pos.x, ' ');
-      hvelocity++;
-      fuel--;
-      break;
+    if (player->fuel != 0) {
+      mvaddch(player->pos.y, player->pos.x, ' ');
+      player->hvelocity++;
+      player->fuel--;
+    }
+    break;
     default:
     mvaddch(player->pos.y, player->pos.x, ' ');
       break;
@@ -78,28 +79,6 @@ Tile** createTileArray(int height, int width) {
     return rows;
 }
 
-/*
-Tile** resetTileArray(Tile** tiles) {
-  free(*tiles);
-  free(tiles);
-}
-
-or
-
-Tile** resetTileArray(Tile** tiles, int height, int width) {
-  int i;
-  int j;
-
-  for (i=0;i<height;i++) {
-    for (j=0;j<width;j++) {
-      tiles[i][j].
-    }
-  }
-
-}
-*/
-
-
 void generateTerrain(Tile** tiles,int height, int width) {
   int i=0;
   int j=0;
@@ -115,6 +94,8 @@ void generateTerrain(Tile** tiles,int height, int width) {
       tiles[i][j].score_mult = score_mult;
     }
   }
+
+  // for all X at I = 1, tile_id = 1 so I don't keep getting seg_faults
 
   for (x=0;x<width;x++) 
   { 
@@ -143,19 +124,21 @@ void generateTerrain(Tile** tiles,int height, int width) {
       mvaddch(height-h,x,'_');
       mvaddch(height-h,x+1,'_');
       tiles[height-h][x].tile_id = 2;
-      //set tile underneath
+      tiles[height-h+1][x].tile_id = 2;
       tiles[height-h][x].score_mult = score_mult;
+      tiles[height-h+1][x].score_mult = score_mult;
       tiles[height-h][x+1].tile_id = 2;
-      //set tile underneath
+      tiles[height-h+1][x+1].tile_id = 2;
       tiles[height-h][x+1].score_mult = score_mult;
+      tiles[height-h+1][x+1].score_mult = score_mult;
 
       x+=2;
       for (x=x;x<width;x++) {
         mvaddch(height-h,x,'_');
         tiles[height-h][x].tile_id = 2;
-        //set tile underneath
+        tiles[height-h+1][x].tile_id = 2;
         tiles[height-h][x].score_mult = score_mult;
-        // store position in array
+        tiles[height-h+1][x].score_mult = score_mult;
 
         r = rand() % 3;
         if (r != 0) {
@@ -169,7 +152,7 @@ void generateTerrain(Tile** tiles,int height, int width) {
     //if (r == 1) {
       mvaddch(height-h,x,'/');
       tiles[height-h][x].tile_id = 1;
-      tiles[height-h-1][x].tile_id = 1;
+      tiles[height-h+1][x].tile_id = 1;
       // store position in array
       h++;
       d=1;
@@ -183,7 +166,7 @@ void generateTerrain(Tile** tiles,int height, int width) {
         h--;
         mvaddch(height-h,x,'\\');
         tiles[height-h][x].tile_id = 1;
-        tiles[height-h-1][x].tile_id = 1;
+        tiles[height-h+1][x].tile_id = 1;
         // store position in array
         r = rand() % 8;
         if (h == 2 || r == 2) {
@@ -209,12 +192,13 @@ void generateTerrain(Tile** tiles,int height, int width) {
             }
 
             tiles[height-h][x].tile_id = 2;
-            //set tile underneath
+            tiles[height-h+1][x].tile_id = 2;
             tiles[height-h][x].score_mult = score_mult;
-            tiles[height-h-1][x].tile_id = 0;
+            tiles[height-h+1][x].score_mult = score_mult;
             tiles[height-h][x+1].tile_id = 2;
-            //set tile underneath
+            tiles[height-h+1][x+1].tile_id = 2;
             tiles[height-h][x+1].score_mult = score_mult;
+            tiles[height-h+1][x+1].score_mult = score_mult;
             mvprintw(height-h+1,x,"x%d",score_mult);
           } 
 
@@ -226,9 +210,9 @@ void generateTerrain(Tile** tiles,int height, int width) {
           for (x=x;x<width;x++) {
             mvaddch(height-h,x,'_');
             tiles[height-h][x].tile_id = 2;
-            // set tile underneath
+            tiles[height-h+1][x].tile_id = 2;
             tiles[height-h][x].score_mult = score_mult;
-            // store position in array
+            tiles[height-h+1][x].score_mult = score_mult;
 
             r = rand() % 3;
             if (r != 0) {
@@ -250,40 +234,76 @@ void generateTerrain(Tile** tiles,int height, int width) {
       //continue;
     }
   }
-  
-  //x--;
-
-  // draws terrain per space
-  // store y,x values of terrain draw into a matrix
-  // the y,x values will be checked each movement tick to see if 
-  // player y,x pos is overlapping
-  //return tiles[][];
 }
 
-void overlayCanvas(int height, int width) {
+/*
+void starGen (Tile** tiles, int height, int width) {
+  int min_y = 4;
+  int max_y = height - height/2;
+  int min_x = 0;
+  int max_x = width;
+
+
+  for (int i=0;i<width;i++) {
+    int rand_y = rand() % (max_y + 1 - min_y) + min_y;
+    int rand_x = rand() % (max_x + 1 - min_x) + min_x;
+
+    for (int j=0;j<height;j++) {
+      if (tiles[rand_y][rand_x].tile_id != 0) {
+        break;
+      }
+    }
+    
+    mvprintw(rand_y, rand_x, ".");
+  }
+}
+*/
+
+void overlayCanvas(Entity* player, int score, int counter, int height, int width) {
   // prints score?, time, fuel, hvelocity, vvelocity and altitude at the top of the screen
+
+  attron(A_BOLD);
   mvprintw(0,1,"SCORE %04d", score);
   mvprintw(1,1,"TIME  %04d", counter);
-  mvprintw(2,1,"FUEL  %04d", fuel);
+  mvprintw(2,1,"FUEL  %04d", player->fuel);
 
   mvprintw(0,width-15,"ALTITUDE   %03d", height - player->pos.y);
-  mvprintw(1,width-15,"X-VELOCITY %+03d", hvelocity);
-  mvprintw(2,width-15,"Y-VELOCITY %+03d", vvelocity);
+  mvprintw(1,width-15,"X-VELOCITY %+03d", player->hvelocity);
+  mvprintw(2,width-15,"Y-VELOCITY %+03d", player->vvelocity);
+
+  mvprintw(0,width/2 - 6,"LUNAR LANDER");
+  mvprintw(1,width/2 - 4,"Q : quit");
+  
+
+  if (player->fuel < 20 && player->fuel != 0) {
+    attron(A_BLINK);
+    mvprintw(2,1,"FUEL  %04d", player->fuel);
+  }
   //mvprintw(1,width/2,"TILE ID: %+03d", tiles[player->pos.y][player->pos.x].tile_id);
 
   //mvprintw(0,width-14,"ALTITUDE  %04d", player->pos.y);
   //mvprintw(2,width-10,"X-VELOCITY %d", hvelocity);
   //mvprintw(2,width-15,"Y-VELOCITY %03d",vvelocity);
 
+  refresh();
+  attroff(A_BLINK);
+  attroff(A_BOLD);
+
   int i;
   for (i=0;i<width;i++) {
     mvaddch(3,i,'~');
   }
+
+  //starGen(height,width);
 }
 
 int main()
 {	
   srand(time(NULL));
+  Entity* player; 
+  int score = 0;
+  int counter = 0;
+  int fuel = 100;
   int FPS = 2;
   int ch;
   int key_press;
@@ -306,11 +326,45 @@ int main()
   attroff(COLOR_PAIR(1));
 
   getmaxyx(stdscr,height,width);
+
+  // start menu while loop
+  while (1) {
+    mvprintw(height/4,width/2 - 6,"LunarLander");
+
+    mvprintw(height/4 + 3,width/2 - 12,"Choose your difficulty:");
+
+    mvprintw(height/4 + 8,width/4 - 6,"1. Fuel 100");
+
+    mvprintw(height/4 + 8,width/2 - 10,"2. Fuel 80");
+
+    mvprintw(height/4 + 8,width/1.4 - 10,"3. Fuel 50");
+
+    key_press = getch();
+
+    if (key_press == '1') {
+      clear();
+      refresh();
+      break;
+    }
+
+    if (key_press == '2') {
+      fuel = 80;
+      clear();
+      refresh();
+      break;
+    }
+
+    if (key_press == '3') {
+      fuel = 50;
+      clear();
+      refresh();
+      break;
+    }
+  }
+
   tiles = createTileArray(height,width);
-  player = createPlayer(start_pos);
-  //tiles[height][width];
-  overlayCanvas(height,width);
-  //tiles = generateTerrain(height, width);
+  player = createPlayer(start_pos,fuel);
+  overlayCanvas(player,score,counter,height,width);
   generateTerrain(tiles,height, width);
   
   mvaddch(player->pos.y, player->pos.x, player->ch);
@@ -321,104 +375,94 @@ int main()
       break;
     }
 
-    if (hvelocity > 0) {
+    if (player->hvelocity > 0) {
       mvaddch(player->pos.y, player->pos.x, ' ');
       player->pos.x += 1;
       mvaddch(player->pos.y, player->pos.x, player->ch);
+
+      if (player->pos.x == width) {
+        player->pos.x = 0;
+      }
     }
 
-    if (hvelocity < 0) {
+    if (player->hvelocity < 0) {
       mvaddch(player->pos.y, player->pos.x, ' ');
       player->pos.x -= 1;
       mvaddch(player->pos.y, player->pos.x, player->ch);
+
+      if (player->pos.x == 0) {
+        player->pos.x = width;
+      }
     }
-    
 
-    //delay++;
-
-    if (vvelocity < 5 || vvelocity > -5) {
+    if (player->vvelocity < 5 || player->vvelocity > -5) {
       delay++;
     }
 
-    if (vvelocity >= 5 || vvelocity <= -5) {
+    if (player->vvelocity >= 5 || player->vvelocity <= -5) {
       delay += 2;
     }
-
-    //if (delay == 1) {
-      //vvelocity = vvelocity * 1.62;
-      //delay = 0;
-    //}
     
-    
-    if (vvelocity >= 0) {
+    if (player->vvelocity > 0) {
       if (delay >= 2) {
         mvaddch(player->pos.y, player->pos.x, ' ');
         player->pos.y += 1;
         mvaddch(player->pos.y, player->pos.x, player->ch);
-        vvelocity = vvelocity + 1;
+        player->vvelocity = player->vvelocity + 1;
+        delay = 0;
+        mvprintw(2,width/2 - 5,"          ");
+      }
+    }
+
+    if (player->vvelocity == 0) {
+      if (delay >= 1) {
+        player->vvelocity = player->vvelocity + 1;
         delay = 0;
       }
     }
 
-    if (vvelocity <= 0) {
+    if (player->vvelocity < 0) {
       //if touching top of screen
       //do not go up and print message Hey now the moon is down there - stop trying to break into the scoreboard!
-
-      if (delay >= 2) {
+      if (delay >= 2 && !(player->pos.y < 5)) {
           mvaddch(player->pos.y, player->pos.x, ' ');
           player->pos.y -= 1;
           mvaddch(player->pos.y, player->pos.x, player->ch);
-          vvelocity = vvelocity + 1.5;
+          player->vvelocity = player->vvelocity + 1.5;
           delay = 0;
+          mvprintw(2,width/2 - 5,"          ");
+      }
+      else if (delay >= 2 && player->pos.y < 5) {
+        mvprintw(2,width/2 - 5,"No entry!!");
+        player->vvelocity = player->vvelocity + 1.5;
+        delay = 0;
       }
     }
 
-    if (hvelocity > 5 || hvelocity < -5) {
+    if (player->hvelocity > 5 || player->hvelocity < -5) {
       FPS = 3;
     }
 
-    handleInput(ch);
-    overlayCanvas(height,width);
-    //clear(); // need to change to either refresh() or smtg else because it will delete terrain and canvas
-    mvaddch(player->pos.y, player->pos.x, player->ch);
-
-    if (tiles[player->pos.y][player->pos.x].tile_id == 2 && vvelocity < 5 && hvelocity < 5) {
-      score += (1000-fuel)*(counter)*tiles[player->pos.y][player->pos.x].score_mult;
-      player->pos = start_pos;
-      mvprintw(height/2,(width/2) - 5,"YOU WIN!!!");
-      mvprintw(height/2 + 1,(width/2) - 17,"Press E to go to the next level!");
-      vvelocity = 0;
-      hvelocity = 2;
-      refresh();
-      while(1) {
-        key_press = getch();
-
-        if (key_press == 'q') {
-          endwin();
-          return 0;
-        }
-
-        if (key_press == 'e') {
-          break;
-        }
-      }
-      clear();
-      overlayCanvas(height,width);
-      generateTerrain(tiles, height, width);
-      refresh();
-      //napms(4000);
-      //nodelay(stdscr,FALSE);
+    if (player->hvelocity <= 5 || player->hvelocity >= -5) {
+      FPS = 2;
     }
 
-    if (tiles[player->pos.y][player->pos.x].tile_id == 1) {
+    handleInput(player,ch);
+    overlayCanvas(player,score,counter,height,width);
+    mvaddch(player->pos.y, player->pos.x, player->ch);
+
+    if (tiles[player->pos.y][player->pos.x].tile_id == 2 && player->vvelocity < 7 && player->hvelocity < 7) {
+      score += (1000-player->fuel)*(counter)*tiles[player->pos.y][player->pos.x].score_mult;
+      //mvaddch(player->pos.y, player->pos.x, ' ');
+      //mvaddch((player->pos.y)-1, player->pos.x, player->ch);
       player->pos = start_pos;
-      mvprintw(height/2,(width/2) - 6,"YOU LOSE!!!");
-      mvprintw(height/2 + 1,(width/2) - 21,"Press Q to quit the game or E to restart!");
-      vvelocity = 0;
-      hvelocity = 2;
-      score = 0;
-      counter = 0;
-      fuel = 100;
+      init_pair(1,COLOR_GREEN,COLOR_BLACK);
+      attron(COLOR_PAIR(1));
+      refresh();
+      mvprintw(height/2,(width/2) - 5,"YOU WIN!!!");
+      mvprintw(height/2 + 1,(width/2) - 17,"Press E to go to the next level!");
+      player->vvelocity = 0;
+      player->hvelocity = 2;
       refresh();
       while(1) {
         key_press = getch();
@@ -432,18 +476,49 @@ int main()
           break;
         }
       }
+      attroff(COLOR_PAIR(1));
       clear();
-      overlayCanvas(height,width);
+      overlayCanvas(player,score,counter,height,width);
       generateTerrain(tiles, height, width);
       refresh();
-      //napms(4000);
-      //nodelay(stdscr,FALSE);
+    }
+
+    if ((tiles[player->pos.y][player->pos.x].tile_id == 1) || (tiles[player->pos.y][player->pos.x].tile_id == 2 && player->vvelocity >= 7) || (tiles[player->pos.y][player->pos.x].tile_id == 2 && player->hvelocity >= 7)) {
+      //mvaddch(player->pos.y, player->pos.x, ' ');
+      //mvaddch((player->pos.y)-1, player->pos.x, player->ch);
+      player->pos = start_pos;
+      init_pair(1,COLOR_RED,COLOR_BLACK);
+      attron(COLOR_PAIR(1));
+      mvprintw(height/2,(width/2) - 6,"YOU LOSE!!!");
+      mvprintw(height/2 + 1,(width/2) - 21,"Press Q to quit the game or E to restart!");
+      player->vvelocity = 0;
+      player->hvelocity = 2;
+      score = 0;
+      counter = 0;
+      player->fuel = fuel;
+      refresh();
+      while(1) {
+        key_press = getch();
+
+        if (key_press == 'q') {
+          endwin();
+          return 0;
+        }
+
+        if (key_press == 'e') {
+          break;
+        }
+      }
+      attroff(COLOR_PAIR(1));
+      clear();
+      overlayCanvas(player,score,counter,height,width);
+      generateTerrain(tiles, height, width);
+      refresh();
     }
 
     counter++;
     while(getch() != ERR) {} // emptys getch buffer so no input lag
     napms(1000/FPS);
-    //check win or lose
   }
 
   endwin();
