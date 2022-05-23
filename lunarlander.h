@@ -12,6 +12,9 @@ typedef struct
 {
   Position pos;
   char ch;
+  int fuel;      
+  int hvelocity; 
+  int vvelocity; 
 } Entity;
 
 typedef struct
